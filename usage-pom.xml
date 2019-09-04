@@ -29,12 +29,12 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-enforcer-plugin</artifactId>
-                <version>1.0-beta-1</version>
+                <version>1.4.1</version>
                 <dependencies>
                     <dependency>
-                        <groupId>custom-rule</groupId>
-                        <artifactId>custom-rule-sample</artifactId>
-                        <version>1.0</version>
+                        <groupId>net.disy.maven.plugin</groupId>
+						<artifactId>concrete-version-enforcer-rule</artifactId>
+						<version>1.0</version>
                     </dependency>
                 </dependencies>
                 <executions>
@@ -42,9 +42,11 @@
                         <id>enforce</id>
                         <configuration>
                             <rules>
-                                <myCustomRule implementation="org.apache.maven.enforcer.rule.MyCustomRule">
-                                    <shouldIfail>false</shouldIfail>
-                                </myCustomRule>
+                                <ConcreteVersionEnforcerRule 
+									implementation="net.disy.maven.enforcer.rules.concreteVersion.ConcreteVersionEnforcerRule">
+									<shouldIfail>false</shouldIfail>
+									<anyparam>this is a Param</anyparam>
+								</ConcreteVersionEnforcerRule>
                             </rules>
                         </configuration>
                         <goals>
