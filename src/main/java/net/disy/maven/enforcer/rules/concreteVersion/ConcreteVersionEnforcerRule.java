@@ -19,122 +19,97 @@ package net.disy.maven.enforcer.rules.concreteVersion;
  * under the License.
  */
 
+import org.apache.maven.enforcer.rule.api.EnforcerRule;
+import org.apache.maven.enforcer.rule.api.EnforcerRuleException;
+import org.apache.maven.enforcer.rule.api.EnforcerRuleHelper;
+import org.apache.maven.model.Dependency;
+import org.apache.maven.plugin.logging.Log;
+import org.apache.maven.project.MavenProject;
+import org.codehaus.plexus.component.configurator.expression.ExpressionEvaluationException;
 
 import java.util.List;
-import java.util.Set;
-
-import org.apache.maven.artifact.Artifact;
-import org.apache.maven.enforcer.rule.api.EnforcerRuleException;
-import org.apache.maven.plugin.logging.Log;
-import org.apache.maven.plugins.enforcer.AbstractBanDependencies;
-//import org.apache.maven.plugins.enforcer.utils.;
 
 /**
  * @author <a href="mailto:brianf@apache.org">Brian Fox</a>
  */
 public class ConcreteVersionEnforcerRule
-        extends AbstractBanDependencies
+        implements EnforcerRule
 {
     /**
-     * Specify the banned dependencies. This can be a list of artifacts in the format
-     * <code>groupId[:artifactId][:version]</code>. Any of the sections can be a wildcard
-     * by using '*' (ie group:*:1.0) <br>
-     * The rule will fail if any dependency matches any exclude, unless it also matches
-     * an include rule.
-     *
-     * @see {@link #setExcludes(List)}
-     * @see {@link #getExcludes()}
+     * Boolean, when set to true this rule fails when it finds a concrete version in the dependencies.
      */
-    private List<String> excludes = null;
-
-    /**
-     * Specify the allowed dependencies. This can be a list of artifacts in the format
-     * <code>groupId[:artifactId][:version]</code>. Any of the sections can be a wildcard
-     * by using '*' (ie group:*:1.0) <br>
-     * Includes override the exclude rules. It is meant to allow wide exclusion rules
-     * with wildcards and still allow a
-     * smaller set of includes. <br>
-     * For example, to ban all xerces except xerces-api -> exclude "xerces", include "xerces:xerces-api"
-     *
-     * @see {@link #setIncludes(List)}
-     * @see {@link #getIncludes()}
-     */
-    private List<String> includes = null;
+    private boolean shouldIFail = false;
 
     @Override
-    protected Set<Artifact> checkDependencies( Set<Artifact> theDependencies, Log log )
+    public void execute( EnforcerRuleHelper helper )
             throws EnforcerRuleException
     {
+        Log log = helper.getLog();
 
-        /**Set<Artifact> excluded = ArtifactUtils.checkDependencies( theDependencies, excludes );
-
-        // anything specifically included should be removed
-        // from the ban list.
-        if ( excluded != null )
+        try
         {
-            Set<Artifact> included = ArtifactUtils.checkDependencies( theDependencies, includes );
-
-            if ( included != null )
+            log.info( "Concrete Version Enforcer rule." );
+            // Get the project out of the helper
+            MavenProject project = (MavenProject) helper.evaluate( "${project}" );
+            // Get the Original Model, not the
+            List dependencies = project.getOriginalModel().getDependencies();
+            for ( Object dependencyObject : dependencies )
             {
-                excluded.removeAll( included );
+                Dependency dependency = (Dependency) dependencyObject;
+                // Find concrete version, variable versions are allowed.
+                if ( dependency.getVersion() != null && !dependency.getVersion().matches( "\\$\\{.*\\}" ) )
+                {
+                    log.warn( "Attention! Dependency " + dependency.getArtifactId()
+                            + " contains concrete version: " + dependency.getVersion() );
+                    if ( this.shouldIFail )
+                    {
+                        throw new EnforcerRuleException( "Failing because a Concrete Version was found in the " +
+                                "dependencies section of the pom" );
+                    }
+                }
             }
         }
-        return excluded;**/
-        log.info( "+++++++++Yes it Works!!" );
-        return null;
-
+        catch ( ExpressionEvaluationException e )
+        {
+            throw new EnforcerRuleException( "Unable to lookup an expression " + e.getLocalizedMessage(), e );
+        }
     }
 
     /**
-     * Gets the excludes.
+     * If your rule is cacheable, you must return a unique id when parameters or conditions
+     * change that would cause the result to be different. Multiple cached results are stored
+     * based on their id.
      *
-     * @return the excludes
+     * The easiest way to do this is to return a hash computed from the values of your parameters.
+     *
+     * If your rule is not cacheable, then the result here is not important, you may return anything.
      */
-    public List<String> getExcludes()
+    public String getCacheId()
     {
-        return this.excludes;
+        //no hash on boolean...only parameter so no hash is needed.
+        return ""+this.shouldIFail;
     }
 
     /**
-     * Specify the banned dependencies. This can be a list of artifacts in the format
-     * <code>groupId[:artifactId][:version]</code>. Any of the sections can be a wildcard
-     * by using '*' (ie group:*:1.0) <br>
-     * The rule will fail if any dependency matches any exclude, unless it also matches an
-     * include rule.
-     *
-     * @see #getExcludes()
-     * @param theExcludes the excludes to set
+     * This tells the system if the results are cacheable at all. Keep in mind that during
+     * forked builds and other things, a given rule may be executed more than once for the same
+     * project. This means that even things that change from project to project may still
+     * be cacheable in certain instances.
      */
-    public void setExcludes( List<String> theExcludes )
+    public boolean isCacheable()
     {
-        this.excludes = theExcludes;
+        return false;
     }
 
     /**
-     * Gets the includes.
-     *
-     * @return the includes
+     * If the rule is cacheable and the same id is found in the cache, the stored results
+     * are passed to this method to allow double checking of the results. Most of the time
+     * this can be done by generating unique ids, but sometimes the results of objects returned
+     * by the helper need to be queried. You may for example, store certain objects in your rule
+     * and then query them later.
      */
-    public List<String> getIncludes()
+    public boolean isResultValid( EnforcerRule arg0 )
     {
-        return this.includes;
-    }
-
-    /**
-     * Specify the allowed dependencies. This can be a list of artifacts in the format
-     * <code>groupId[:artifactId][:version]</code>. Any of the sections can be a wildcard
-     * by using '*' (ie group:*:1.0) <br>
-     * Includes override the exclude rules. It is meant to allow wide exclusion rules with
-     * wildcards and still allow a
-     * smaller set of includes. <br>
-     * For example, to ban all xerces except xerces-api → exclude "xerces",
-     * include "xerces:xerces-api"
-     *
-     * @see #setIncludes(List)
-     * @param theIncludes the includes to set
-     */
-    public void setIncludes( List<String> theIncludes )
-    {
-        this.includes = theIncludes;
+        return false;
     }
 }
