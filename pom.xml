@@ -79,20 +79,10 @@
 			<version>1.0-alpha-9</version>
 		</dependency>
 		<dependency>
-			<groupId>org.apache.maven.enforcer</groupId>
-			<artifactId>enforcer-rules</artifactId>
-			<version>${enforcer.api.version}</version>
-		</dependency>
-		<dependency>
 			<groupId>junit</groupId>
 			<artifactId>junit</artifactId>
 			<version>3.8.2</version>
 			<scope>test</scope>
-		</dependency>
-		<dependency>
-			<groupId>org.apache.maven.shared</groupId>
-			<artifactId>maven-dependency-tree</artifactId>
-			<version>2.2</version>
 		</dependency>
 	</dependencies>
 </project>
