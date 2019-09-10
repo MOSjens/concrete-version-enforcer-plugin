@@ -57,7 +57,7 @@ public class ConcreteVersionEnforcerRule
             {
                 Dependency dependency = (Dependency) dependencyObject;
                 // Find concrete version, variable versions are allowed.
-                if ( dependency.getVersion() != null && !dependency.getVersion().matches( "\\$\\{.*\\}" ) )
+                if ( dependency.getVersion() != null && !dependency.getVersion().matches( "\\$\\{project.version\\}" ) )
                 {
                     log.warn( "Attention! Dependency " + dependency.getArtifactId()
                             + " contains concrete version: " + dependency.getVersion() );
